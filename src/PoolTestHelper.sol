@@ -1,0 +1,126 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.12; // 0.8.12 as fixed in UniswapV3Pool
+
+import "forge-std/Test.sol";
+
+import "@uniswap/v3-core/contracts/UniswapV3Pool.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3PoolDeployer.sol";
+import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
+
+contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
+
+    enum Chains { Mainnet, Goerli, Arbitrum, Optimism, Polygon, BSC, Celo, Base, Other }
+
+    address internal factoryInit;
+    address internal token0Init;
+    address internal token1Init;
+    uint24 internal feeInit;
+    int24 internal tickSpacingInit;
+
+    function createPool(address _tokenA, address _tokenB, uint24 _fee, uint160 _initialSqrtPriceX96, Chains _chain) public returns(IUniswapV3Pool _newPool) {
+        // Avoid the cryptic R() error
+        require(_initialSqrtPriceX96 >= TickMath.MIN_SQRT_RATIO, "initial sqrt price too low");
+        require(_initialSqrtPriceX96 <= TickMath.MAX_SQRT_RATIO, "initial sqrt price too high");
+
+        // Sort the tokens
+        (token0Init, token1Init) = _tokenA < _tokenB ? (_tokenA, _tokenB) : (_tokenB, _tokenA);
+
+        // The factoryInit should correspond to the Uniswap V3 factoryInit, based on the _chain enum arg, if some create2 dependent logic is used
+        if (uint256(_chain) <= uint256(Chains.Polygon)) {
+            factoryInit = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+        } else if (_chain == Chains.BSC) {
+            factoryInit = 0xdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F7;
+        } else if (_chain == Chains.Celo) {
+            factoryInit = 0xAfE208a311B21f13EF87E33A90049fC17A7acDEc;
+        } else if (_chain == Chains.Base) {
+            factoryInit = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
+        } else {
+            factoryInit = address(this);
+        }
+        feeInit = _fee;
+
+        // Assign the tick spacing based on the fees
+        if (_fee == 100) {
+            tickSpacingInit = 1;
+        } else if (_fee == 500) {
+            tickSpacingInit = 10;
+        } else if (_fee == 3000) {
+            tickSpacingInit = 60;
+        } else if (_fee == 10000) {
+            tickSpacingInit = 200;
+        }
+
+        // Deploy a new pool
+        _newPool = new UniswapV3Pool{salt: keccak256(abi.encode(token0Init, token1Init, feeInit))}();
+
+        // Initialise the pool
+        _newPool.initialize(_initialSqrtPriceX96);
+    }
+
+    function parameters() public view returns (
+        address,
+        address,
+        address,
+        uint24,
+        int24
+    ) {
+        return (
+            factoryInit,
+            token0Init,
+            token1Init,
+            feeInit,
+            tickSpacingInit
+        );
+    }
+
+    // Full range
+    function addLiquidity(IUniswapV3Pool _pool, uint256 _amount0, uint256 _amount1) public{
+        int24 _tickSpacing = _pool.tickSpacing();
+        int24 _lowerTick = TickMath.MIN_TICK;
+        int24 _upperTick = TickMath.MAX_TICK;
+
+        if(_lowerTick % _tickSpacing != 0) _lowerTick = _lowerTick + (_tickSpacing - (_lowerTick % _tickSpacing));
+
+        if(_upperTick % _tickSpacing != 0) _upperTick = _upperTick - (_upperTick % _tickSpacing);
+
+        addLiquidity(
+            _pool,
+            _lowerTick,
+            _upperTick,
+            _amount0,
+            _amount1
+        );
+    }
+
+    // Given range
+    function addLiquidity(IUniswapV3Pool _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1) public {
+        int24 _tickSpacing = _pool.tickSpacing();
+        require(_lowerTick % _tickSpacing == 0, "lower tick not a multiple of tick spacing");
+        require(_upperTick % _tickSpacing == 0, "upper tick not a multiple of tick spacing");
+
+        _pool.mint(
+            address(this),
+            _lowerTick,
+            _upperTick,
+            _liquidity,
+            abi.encode(_pool.token0(), _pool.token1())
+        );
+    }
+
+    function uniswapV3MintCallback(
+        uint256 amount0Owed,
+        uint256 amount1Owed,
+        bytes calldata data
+    ) external {
+
+        (address token0, address token1) = abi.decode(data, (address, address));
+
+        if(amount0Owed > 0)
+            vm.deal(token0, amount0Owed, msg.sender);
+        
+        if(amount1Owed > 0)
+            vm.deal(token1, amount1Owed, msg.sender);
+    }
+    
+
+}
