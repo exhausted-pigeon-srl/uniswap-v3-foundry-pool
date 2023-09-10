@@ -3,9 +3,13 @@ pragma solidity ^0.8.12; // 0.8.12 as fixed in UniswapV3Pool
 
 import "forge-std/Test.sol";
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v3-core/contracts/UniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3PoolDeployer.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
+import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
+
+
 
 contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
 
@@ -94,16 +98,33 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
 
     // Given range
     function addLiquidity(IUniswapV3Pool _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1) public {
+        address _token0 = _pool.token0();
+        address _token1 = _pool.token1();
         int24 _tickSpacing = _pool.tickSpacing();
         require(_lowerTick % _tickSpacing == 0, "lower tick not a multiple of tick spacing");
         require(_upperTick % _tickSpacing == 0, "upper tick not a multiple of tick spacing");
+
+        (uint160 _currentSqrtPriceX96,,,,,,) = _pool.slot0();
+
+        // compute the sqrt price at the lower and upper ticks
+        uint160 _sqrtPriceAX96 = TickMath.getSqrtRatioAtTick(_lowerTick);
+        uint160 _sqrtPriceBX96 = TickMath.getSqrtRatioAtTick(_upperTick);
+
+        // compute the corresponding liquidity
+        uint128 _liquidity = LiquidityAmounts.getLiquidityForAmounts(
+            _currentSqrtPriceX96,
+            _sqrtPriceAX96,
+            _sqrtPriceBX96,
+            _amount0,
+            _amount1
+        );
 
         _pool.mint(
             address(this),
             _lowerTick,
             _upperTick,
             _liquidity,
-            abi.encode(_pool.token0(), _pool.token1())
+            abi.encode(_token0, _token1)
         );
     }
 
@@ -115,11 +136,15 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
 
         (address token0, address token1) = abi.decode(data, (address, address));
 
-        if(amount0Owed > 0)
-            vm.deal(token0, amount0Owed, msg.sender);
+        if(amount0Owed > 0) {
+            vm.deal(token0, amount0Owed);
+            IERC20(token0).transfer(msg.sender, amount0Owed);
+        }
         
-        if(amount1Owed > 0)
-            vm.deal(token1, amount1Owed, msg.sender);
+        if(amount1Owed > 0) {
+            vm.deal(token1, amount1Owed);
+            IERC20(token1).transfer(msg.sender, amount1Owed);
+        }
     }
     
 
