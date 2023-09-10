@@ -137,12 +137,12 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
         (address token0, address token1) = abi.decode(data, (address, address));
 
         if(amount0Owed > 0) {
-            vm.deal(token0, amount0Owed);
+            deal(token0, address(this), amount0Owed, true);
             IERC20(token0).transfer(msg.sender, amount0Owed);
         }
         
         if(amount1Owed > 0) {
-            vm.deal(token1, amount1Owed);
+            deal(token1, address(this), amount1Owed, true);
             IERC20(token1).transfer(msg.sender, amount1Owed);
         }
     }
