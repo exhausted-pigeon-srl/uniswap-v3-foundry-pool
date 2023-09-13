@@ -1,13 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
-import {Test, console2} from "forge-std/Test.sol";
-import {PoolTestHelper, IUniswapV3Pool, TickMath} from "../src/PoolTestHelper.sol";
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract CounterTest is Test {
+import {IUniswapV3PoolEvents} from "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolEvents.sol";
+import {LiquidityAmounts} from "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
+
+import {Test, console2} from "forge-std/Test.sol";
+import {PoolTestHelper, IUniswapV3Pool, TickMath} from "../src/PoolTestHelper.sol";
+
+contract Events is IUniswapV3PoolEvents {
+    // IERC20:
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
+}
+
+
+contract CounterTest is Test, Events {
     PoolTestHelper public helper;
 
     address tokenA;
@@ -70,6 +81,86 @@ contract CounterTest is Test {
             PoolTestHelper.Chains.Mainnet
         );
 
+        // Not matching the data (here, amount)
+        vm.expectEmit(true, true, true, false, address(tokenA));
+        emit Transfer(
+            address(helper),
+            address(_newPool),
+            1e18
+        );
+
+        // Not matching the data (here, amount)
+        vm.expectEmit(true, true, true, false, address(tokenB));
+        emit Transfer(
+            address(helper),
+            address(_newPool),
+            1e18
+        );
+    
+        // Matching owner and ticks 
+        vm.expectEmit(true, true, true, false, address(_newPool));
+        emit Mint(
+            address(helper),
+            address(helper),
+            -887272,
+            887272,
+            1e18,
+            1e18,
+            1e18
+        );
+
         helper.addLiquidity(_newPool, 1e18, 1e18);
     }
+
+    function test_addLiquidity_concentrated() public {
+        // Fee 500 -> tick spacing 10
+        int24 _lowerTick = 1000;
+        int24 _upperTick = _lowerTick + 10;
+
+        IUniswapV3Pool _newPool = helper.createPool(
+            tokenA,
+            tokenB,
+            500,
+            TickMath.getSqrtRatioAtTick(_lowerTick + 5),
+            PoolTestHelper.Chains.Mainnet
+        );
+
+        // Not matching the data (here, amount)
+        vm.expectEmit(true, true, false, false, address(tokenA));
+        emit Transfer(
+            address(helper),
+            address(_newPool),
+            1e18
+        );
+
+        // Not matching the data (here, amount)
+        vm.expectEmit(true, true, false, false, address(tokenB));
+        emit Transfer(
+            address(helper),
+            address(_newPool),
+            1e18
+        );
+    
+        // Matching owner and ticks 
+        vm.expectEmit(true, true, true, false, address(_newPool));
+        emit Mint(
+            address(helper),
+            address(helper),
+            _lowerTick,
+            _upperTick,
+            1e18,
+            1e18,
+            1e18
+        );
+
+        helper.addLiquidity(_newPool, _lowerTick, _upperTick, 1e18, 1e18);
+    }
+
+    // swap 
+
+    // remove liquidirty
+
+    // increase cardinality (or max in setup)
+
+    // observe
 }

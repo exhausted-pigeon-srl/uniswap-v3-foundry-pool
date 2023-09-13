@@ -101,6 +101,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
         address _token0 = _pool.token0();
         address _token1 = _pool.token1();
         int24 _tickSpacing = _pool.tickSpacing();
+        
         require(_lowerTick % _tickSpacing == 0, "lower tick not a multiple of tick spacing");
         require(_upperTick % _tickSpacing == 0, "upper tick not a multiple of tick spacing");
 
@@ -146,6 +147,23 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
             IERC20(token1).transfer(msg.sender, amount1Owed);
         }
     }
-    
 
+    function swap(IUniswapV3Pool _pool, uint256 _amountIn, address _tokenIn) external {
+        address _token0 = _pool.token0();
+        address _token1 = _pool.token1();
+
+        _pool.swap({
+            recipient: msg.sender,
+            zeroForOne: _tokenIn == _token0,
+            amountSpecified: uint256(_amountIn),
+            sqrtPriceLimitX96: _tokenIn == _token0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
+            data: ''
+        })
+    }
+
+    // remove liquidity
+
+    // increase cardinality
+
+    // observe
 }
