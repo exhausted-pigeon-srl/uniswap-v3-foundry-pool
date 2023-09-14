@@ -175,12 +175,10 @@ contract PoolTestHelper_Test is Test, Events {
 
     // remove liquidity
     function test_removeLiquidity_fullRange() public {
-        test_addLiquidity_fullRange();
+        uint128 _liquidity = uint128(test_addLiquidity_fullRange());
 
-        helper.removeLiquidity(pool, 0.5 ether, TickMath.MIN_TICK, TickMath.MAX_TICK);
+        helper.removeLiquidity(pool, _liquidity, TickMath.MIN_TICK, TickMath.MAX_TICK);
     }
-
-
 
     // increase cardinality (or max in setup)
 

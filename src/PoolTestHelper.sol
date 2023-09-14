@@ -78,7 +78,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
     }
 
     // Full range
-    function addLiquidity(IUniswapV3Pool _pool, uint256 _amount0, uint256 _amount1) public{
+    function addLiquidity(IUniswapV3Pool _pool, uint256 _amount0, uint256 _amount1) public returns(uint256 _liquidityAmount){
         int24 _tickSpacing = _pool.tickSpacing();
         int24 _lowerTick = TickMath.MIN_TICK;
         int24 _upperTick = TickMath.MAX_TICK;
@@ -87,7 +87,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
 
         if(_upperTick % _tickSpacing != 0) _upperTick = _upperTick - (_upperTick % _tickSpacing);
 
-        addLiquidity(
+        return addLiquidity(
             _pool,
             _lowerTick,
             _upperTick,
@@ -97,7 +97,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
     }
 
     // Given range
-    function addLiquidity(IUniswapV3Pool _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1) public returns(uint256 _liquidityAmount){
+    function addLiquidity(IUniswapV3Pool _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1) public returns(uint256){
         address _token0 = _pool.token0();
         address _token1 = _pool.token1();
         int24 _tickSpacing = _pool.tickSpacing();
@@ -120,7 +120,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
             _amount1
         );
 
-        (uint256 _actualAmount0, uint256 _actualAmount1) = _pool.mint(
+        _pool.mint(
             address(this),
             _lowerTick,
             _upperTick,
@@ -128,13 +128,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
             abi.encode(_token0, _token1)
         );
 
-        return LiquidityAmounts.getLiquidityForAmounts(
-            _currentSqrtPriceX96,
-            _sqrtPriceAX96,
-            _sqrtPriceBX96,
-            _actualAmount0,
-            _actualAmount1
-        );
+        return _liquidity;
     }
 
     function uniswapV3MintCallback(
@@ -183,8 +177,6 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
 
     // remove liquidity
     function removeLiquidity(IUniswapV3Pool _pool, uint128 _amount, int24 _tickLower, int24 _tickUpper) public {
-        address _token0 = _pool.token0();
-        address _token1 = _pool.token1();
         int24 _tickSpacing = _pool.tickSpacing();
         
         require(_tickLower % _tickSpacing == 0, "lower tick not a multiple of tick spacing");
