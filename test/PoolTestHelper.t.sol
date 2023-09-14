@@ -14,12 +14,13 @@ contract Events is IUniswapV3PoolEvents {
     // IERC20:
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
-
 }
 
 
-contract CounterTest is Test, Events {
+contract PoolTestHelper_Test is Test, Events {
     PoolTestHelper public helper;
+
+    IUniswapV3Pool pool;
 
     address tokenA;
     address tokenB;
@@ -33,7 +34,7 @@ contract CounterTest is Test, Events {
     function test_deployNewPool() public {
         uint256 _snap = vm.snapshot();
 
-        IUniswapV3Pool _newPool = helper.createPool(
+        pool = helper.createPool(
             tokenA,
             tokenB,
             100,
@@ -43,12 +44,12 @@ contract CounterTest is Test, Events {
 
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         
-        assertEq(token0, _newPool.token0(), "The token0 does not match");
-        assertEq(token1, _newPool.token1(), "The token1 does not match");
-        assertEq(100, _newPool.fee(), "The fee does not match");
-        assertEq(1, _newPool.tickSpacing(), "The tickSpacing does not match");
+        assertEq(token0, pool.token0(), "The token0 does not match");
+        assertEq(token1, pool.token1(), "The token1 does not match");
+        assertEq(100, pool.fee(), "The fee does not match");
+        assertEq(1, pool.tickSpacing(), "The tickSpacing does not match");
 
-        (uint160 currentPrice,,,,,,) = _newPool.slot0();
+        (uint160 currentPrice,,,,,,) = pool.slot0();
         assertEq(TickMath.MIN_SQRT_RATIO + 1, currentPrice, "The current price does not match the initial price");
         
         // Use other order
@@ -56,7 +57,7 @@ contract CounterTest is Test, Events {
         
         vm.revertTo(_snap);
 
-        IUniswapV3Pool _newPool2 = helper.createPool(
+        IUniswapV3Pool pool2 = helper.createPool(
             tokenA,
             tokenB,
             100,
@@ -66,18 +67,18 @@ contract CounterTest is Test, Events {
 
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         
-        assertEq(token0, _newPool2.token0(), "The token0 does not match in the new pool");
-        assertEq(token1, _newPool2.token1(), "The token1 does not match in the new pool");
+        assertEq(token0, pool2.token0(), "The token0 does not match in the new pool");
+        assertEq(token1, pool2.token1(), "The token1 does not match in the new pool");
 
-        assertEq(address(_newPool), address(_newPool2), "The pools should be the same");
+        assertEq(address(pool), address(pool2), "The pools should be the same");
     }
 
-    function test_addLiquidity_fullRange() public {
-        IUniswapV3Pool _newPool = helper.createPool(
+    function test_addLiquidity_fullRange() public returns(uint256 _liquidityAmount){
+        pool = helper.createPool(
             tokenA,
             tokenB,
             100,
-            10 ether,
+            1 ether,
             PoolTestHelper.Chains.Mainnet
         );
 
@@ -85,7 +86,7 @@ contract CounterTest is Test, Events {
         vm.expectEmit(true, true, true, false, address(tokenA));
         emit Transfer(
             address(helper),
-            address(_newPool),
+            address(pool),
             1e18
         );
 
@@ -93,12 +94,12 @@ contract CounterTest is Test, Events {
         vm.expectEmit(true, true, true, false, address(tokenB));
         emit Transfer(
             address(helper),
-            address(_newPool),
+            address(pool),
             1e18
         );
     
         // Matching owner and ticks 
-        vm.expectEmit(true, true, true, false, address(_newPool));
+        vm.expectEmit(true, true, true, false, address(pool));
         emit Mint(
             address(helper),
             address(helper),
@@ -109,7 +110,7 @@ contract CounterTest is Test, Events {
             1e18
         );
 
-        helper.addLiquidity(_newPool, 1e18, 1e18);
+        return helper.addLiquidity(pool, 10e18, 10e18);
     }
 
     function test_addLiquidity_concentrated() public {
@@ -117,7 +118,7 @@ contract CounterTest is Test, Events {
         int24 _lowerTick = 1000;
         int24 _upperTick = _lowerTick + 10;
 
-        IUniswapV3Pool _newPool = helper.createPool(
+        pool = helper.createPool(
             tokenA,
             tokenB,
             500,
@@ -129,7 +130,7 @@ contract CounterTest is Test, Events {
         vm.expectEmit(true, true, false, false, address(tokenA));
         emit Transfer(
             address(helper),
-            address(_newPool),
+            address(pool),
             1e18
         );
 
@@ -137,12 +138,12 @@ contract CounterTest is Test, Events {
         vm.expectEmit(true, true, false, false, address(tokenB));
         emit Transfer(
             address(helper),
-            address(_newPool),
+            address(pool),
             1e18
         );
     
         // Matching owner and ticks 
-        vm.expectEmit(true, true, true, false, address(_newPool));
+        vm.expectEmit(true, true, true, false, address(pool));
         emit Mint(
             address(helper),
             address(helper),
@@ -153,12 +154,33 @@ contract CounterTest is Test, Events {
             1e18
         );
 
-        helper.addLiquidity(_newPool, _lowerTick, _upperTick, 1e18, 1e18);
+        helper.addLiquidity(pool, _lowerTick, _upperTick, 1e18, 1e18);
     }
 
-    // swap 
+    // swap
+    function test_swap() public {
+        test_addLiquidity_fullRange();
 
-    // remove liquidirty
+        vm.deal(tokenA, 1 ether);
+
+        // Match the addresses
+        vm.expectEmit(true, true, false, false, address(tokenA));
+        emit Transfer(address(helper), address(pool), 1e18);
+
+        vm.expectEmit(true, true, false, false, address(pool));
+        emit Swap(address(helper), address(this), 0, 0, 0, 0, 0);
+
+        helper.swap(pool, tokenA, 1 ether);
+    }
+
+    // remove liquidity
+    function test_removeLiquidity_fullRange() public {
+        test_addLiquidity_fullRange();
+
+        helper.removeLiquidity(pool, 0.5 ether, TickMath.MIN_TICK, TickMath.MAX_TICK);
+    }
+
+
 
     // increase cardinality (or max in setup)
 

@@ -97,7 +97,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
     }
 
     // Given range
-    function addLiquidity(IUniswapV3Pool _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1) public {
+    function addLiquidity(IUniswapV3Pool _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1) public returns(uint256 _liquidityAmount){
         address _token0 = _pool.token0();
         address _token1 = _pool.token1();
         int24 _tickSpacing = _pool.tickSpacing();
@@ -120,12 +120,20 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
             _amount1
         );
 
-        _pool.mint(
+        (uint256 _actualAmount0, uint256 _actualAmount1) = _pool.mint(
             address(this),
             _lowerTick,
             _upperTick,
             _liquidity,
             abi.encode(_token0, _token1)
+        );
+
+        return LiquidityAmounts.getLiquidityForAmounts(
+            _currentSqrtPriceX96,
+            _sqrtPriceAX96,
+            _sqrtPriceBX96,
+            _actualAmount0,
+            _actualAmount1
         );
     }
 
@@ -133,7 +141,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
         uint256 amount0Owed,
         uint256 amount1Owed,
         bytes calldata data
-    ) external {
+    ) public {
 
         (address token0, address token1) = abi.decode(data, (address, address));
 
@@ -148,20 +156,46 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
         }
     }
 
-    function swap(IUniswapV3Pool _pool, uint256 _amountIn, address _tokenIn) external {
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata data
+    ) external {
+        uniswapV3MintCallback(
+            amount0Delta > 0 ? uint256(amount0Delta) : 0,
+            amount1Delta > 0 ? uint256(amount1Delta) : 0,
+            data
+        );
+    }
+
+    function swap(IUniswapV3Pool _pool, address _tokenIn, uint256 _amountIn) external {
         address _token0 = _pool.token0();
         address _token1 = _pool.token1();
 
         _pool.swap({
             recipient: msg.sender,
             zeroForOne: _tokenIn == _token0,
-            amountSpecified: uint256(_amountIn),
+            amountSpecified: int256(_amountIn),
             sqrtPriceLimitX96: _tokenIn == _token0 ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
-            data: ''
-        })
+            data: abi.encode(_token0, _token1)
+        });
     }
 
     // remove liquidity
+    function removeLiquidity(IUniswapV3Pool _pool, uint128 _amount, int24 _tickLower, int24 _tickUpper) public {
+        address _token0 = _pool.token0();
+        address _token1 = _pool.token1();
+        int24 _tickSpacing = _pool.tickSpacing();
+        
+        require(_tickLower % _tickSpacing == 0, "lower tick not a multiple of tick spacing");
+        require(_tickUpper % _tickSpacing == 0, "upper tick not a multiple of tick spacing");
+
+        _pool.burn(_tickLower, _tickUpper, _amount);
+
+        _pool.collect(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, type(uint128).max, type(uint128).max);
+    }
+
+
 
     // increase cardinality
 
