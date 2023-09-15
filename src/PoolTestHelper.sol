@@ -11,7 +11,7 @@ import "./external/uniswap-v3/libraries/TickMath.sol";
 import "./external/uniswap-v3/libraries/LiquidityAmounts.sol";
 
 
-contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
+contract PoolTestHelper is Test {
 
     enum Chains { Mainnet, Goerli, Arbitrum, Optimism, Polygon, BSC, Celo, Base, Other }
 
@@ -55,27 +55,22 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
         }
 
         // Deploy a new pool
+        vm.mockCall(
+            factoryInit, 
+            abi.encodeCall(IUniswapV3PoolDeployer.parameters, ()),
+            abi.encode(factoryInit,
+                token0Init,
+                token1Init,
+                feeInit,
+                tickSpacingInit
+            )
+        );
+
         vm.prank(factoryInit);
         _newPool = new UniswapV3Pool{salt: keccak256(abi.encode(token0Init, token1Init, feeInit))}();
 
         // Initialise the pool
         _newPool.initialize(_initialSqrtPriceX96);
-    }
-
-    function parameters() public view returns (
-        address,
-        address,
-        address,
-        uint24,
-        int24
-    ) {
-        return (
-            factoryInit,
-            token0Init,
-            token1Init,
-            feeInit,
-            tickSpacingInit
-        );
     }
 
     // Full range
