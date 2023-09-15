@@ -55,6 +55,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
         }
 
         // Deploy a new pool
+        vm.prank(factoryInit);
         _newPool = new UniswapV3Pool{salt: keccak256(abi.encode(token0Init, token1Init, feeInit))}();
 
         // Initialise the pool
