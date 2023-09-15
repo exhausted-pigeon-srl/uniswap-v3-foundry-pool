@@ -78,7 +78,7 @@ contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
     }
 
     // Full range
-    function addLiquidity(IUniswapV3Pool _pool, uint256 _amount0, uint256 _amount1) public returns(uint256 _liquidityAmount){
+    function addLiquidityFullRange(IUniswapV3Pool _pool, uint256 _amount0, uint256 _amount1) public returns(uint256 _liquidityAmount){
         int24 _tickSpacing = _pool.tickSpacing();
         int24 _lowerTick = TickMath.MIN_TICK;
         int24 _upperTick = TickMath.MAX_TICK;
