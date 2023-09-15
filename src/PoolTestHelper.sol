@@ -4,11 +4,11 @@ pragma solidity ^0.8.12; // 0.8.12 as fixed in UniswapV3Pool
 import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@uniswap/v3-core/contracts/UniswapV3Pool.sol";
-import "@uniswap/v3-core/contracts/interfaces/IUniswapV3PoolDeployer.sol";
-import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
-import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 
+import "./external/uniswap-v3/UniswapV3Pool.sol";
+import "./external/uniswap-v3/interfaces/IUniswapV3PoolDeployer.sol";
+import "./external/uniswap-v3/libraries/TickMath.sol";
+import "./external/uniswap-v3/libraries/LiquidityAmounts.sol";
 
 
 contract PoolTestHelper is Test, IUniswapV3PoolDeployer {
