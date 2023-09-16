@@ -68,8 +68,8 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
         );
 
 
-// TODO: Cannot etch (breaks invariant tests) but need to have the right factory address *and* uniswap pool bytecode (aka same solc)
-// -> import bytecode and create2 asm - todo
+// TODO: Cannot etch (breaks invariant tests) but need to have the right factory address *and* uniswap pool bytecode (aka same solc) for create2 *hardcoded* in some contracts
+// -> import bytecode and create2 asm
         vm.prank(factoryInit);
         _newPool = IUniswapV3Pool(deployPool(token0Init, token1Init, feeInit));
         // _newPool = new UniswapV3Pool{salt: keccak256(abi.encode(token0Init, token1Init, feeInit))}();
