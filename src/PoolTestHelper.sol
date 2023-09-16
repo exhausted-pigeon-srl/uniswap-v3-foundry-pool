@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12; // 0.8.12 as fixed in UniswapV3Pool
+pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
 
@@ -10,8 +10,9 @@ import "./external/uniswap-v3/interfaces/IUniswapV3PoolDeployer.sol";
 import "./external/uniswap-v3/libraries/TickMath.sol";
 import "./external/uniswap-v3/libraries/LiquidityAmounts.sol";
 
+import './UniswapV3PoolCloner.sol';
 
-contract PoolTestHelper is Test {
+contract PoolTestHelper is Test, UniswapV3PoolCloner {
 
     enum Chains { Mainnet, Goerli, Arbitrum, Optimism, Polygon, BSC, Celo, Base, Other }
 
@@ -70,7 +71,8 @@ contract PoolTestHelper is Test {
 // TODO: Cannot etch (breaks invariant tests) but need to have the right factory address *and* uniswap pool bytecode (aka same solc)
 // -> import bytecode and create2 asm - todo
         vm.prank(factoryInit);
-        _newPool = new UniswapV3Pool{salt: keccak256(abi.encode(token0Init, token1Init, feeInit))}();
+        _newPool = IUniswapV3Pool(deployPool(token0Init, token1Init, feeInit));
+        // _newPool = new UniswapV3Pool{salt: keccak256(abi.encode(token0Init, token1Init, feeInit))}();
 
         // Initialise the pool
         _newPool.initialize(_initialSqrtPriceX96);
