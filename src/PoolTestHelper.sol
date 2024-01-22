@@ -98,7 +98,7 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
     }
 
     // Given range
-    function addLiquidity(IUniswapV3Pool _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1) public returns(uint256){
+    function addLiquidity(address _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1) public returns(uint256){
         address _token0 = _pool.token0();
         address _token1 = _pool.token1();
         int24 _tickSpacing = _pool.tickSpacing();
@@ -106,7 +106,7 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
         require(_lowerTick % _tickSpacing == 0, "lower tick not a multiple of tick spacing");
         require(_upperTick % _tickSpacing == 0, "upper tick not a multiple of tick spacing");
 
-        (uint160 _currentSqrtPriceX96,,,,,,) = _pool.slot0();
+        (uint160 _currentSqrtPriceX96,,,,,,) = IUniswapV3Pool(_pool).slot0();
 
         // compute the sqrt price at the lower and upper ticks
         uint160 _sqrtPriceAX96 = TickMath.getSqrtRatioAtTick(_lowerTick);
@@ -121,7 +121,7 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
             _amount1
         );
 
-        _pool.mint(
+        IUniswapV3Pool(_pool).mint(
             address(this),
             _lowerTick,
             _upperTick,
