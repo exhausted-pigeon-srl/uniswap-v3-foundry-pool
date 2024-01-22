@@ -22,7 +22,7 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
     uint24 internal feeInit;
     int24 internal tickSpacingInit;
 
-    function createPool(address _tokenA, address _tokenB, uint24 _fee, uint160 _initialSqrtPriceX96, Chains _chain) public returns(IUniswapV3Pool _newPool) {
+    function createPool(address _tokenA, address _tokenB, uint24 _fee, uint160 _initialSqrtPriceX96, Chains _chain) public returns(address _newPool) {
         // Avoid the cryptic R() error
         require(_initialSqrtPriceX96 >= TickMath.MIN_SQRT_RATIO, "initial sqrt price too low");
         require(_initialSqrtPriceX96 <= TickMath.MAX_SQRT_RATIO, "initial sqrt price too high");
@@ -71,11 +71,11 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
 // TODO: Cannot etch (breaks invariant tests) but need to have the right factory address *and* uniswap pool bytecode (aka same solc) for create2 *hardcoded* in some contracts
 // -> import bytecode and create2 asm
         vm.prank(factoryInit);
-        _newPool = IUniswapV3Pool(deployPool(token0Init, token1Init, feeInit));
+        _newPool = deployPool(token0Init, token1Init, feeInit);
         // _newPool = new UniswapV3Pool{salt: keccak256(abi.encode(token0Init, token1Init, feeInit))}();
 
         // Initialise the pool
-        _newPool.initialize(_initialSqrtPriceX96);
+        IUniswapV3Pool(_newPool).initialize(_initialSqrtPriceX96);
     }
 
     // Full range
