@@ -141,12 +141,13 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
         (address token0, address token1) = abi.decode(data, (address, address));
 
         if(amount0Owed > 0) {
-            deal(token0, address(this), amount0Owed, true);
+            // Do not adjust total supply as this requires a supply stored, which is not the case for weth
+            deal(token0, address(this), amount0Owed, false);
             IERC20(token0).transfer(msg.sender, amount0Owed);
         }
         
         if(amount1Owed > 0) {
-            deal(token1, address(this), amount1Owed, true);
+            deal(token1, address(this), amount1Owed, false);
             IERC20(token1).transfer(msg.sender, amount1Owed);
         }
     }
