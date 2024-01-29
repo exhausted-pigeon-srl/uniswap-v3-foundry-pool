@@ -80,7 +80,7 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
 
     // Full range
     function addLiquidityFullRange(address _pool, uint256 _amount0, uint256 _amount1) public returns(uint256 _liquidityAmount){
-        int24 _tickSpacing = _pool.tickSpacing();
+        int24 _tickSpacing = IUniswapV3Pool(_pool).tickSpacing();
         int24 _lowerTick = TickMath.MIN_TICK;
         int24 _upperTick = TickMath.MAX_TICK;
 
