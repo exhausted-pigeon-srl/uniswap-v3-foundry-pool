@@ -79,7 +79,7 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
     }
 
     // Full range
-    function addLiquidityFullRange(IUniswapV3Pool _pool, uint256 _amount0, uint256 _amount1) public returns(uint256 _liquidityAmount){
+    function addLiquidityFullRange(address _pool, uint256 _amount0, uint256 _amount1) public returns(uint256 _liquidityAmount){
         int24 _tickSpacing = _pool.tickSpacing();
         int24 _lowerTick = TickMath.MIN_TICK;
         int24 _upperTick = TickMath.MAX_TICK;
@@ -99,9 +99,9 @@ contract PoolTestHelper is Test, UniswapV3PoolCloner {
 
     // Given range
     function addLiquidity(address _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1) public returns(uint256){
-        address _token0 = _pool.token0();
-        address _token1 = _pool.token1();
-        int24 _tickSpacing = _pool.tickSpacing();
+        address _token0 = IUniswapV3Pool(_pool).token0();
+        address _token1 = IUniswapV3Pool(_pool).token1();
+        int24 _tickSpacing = IUniswapV3Pool(_pool).tickSpacing();
         
         require(_lowerTick % _tickSpacing == 0, "lower tick not a multiple of tick spacing");
         require(_upperTick % _tickSpacing == 0, "upper tick not a multiple of tick spacing");
