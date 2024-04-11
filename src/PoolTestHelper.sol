@@ -82,7 +82,7 @@ contract PoolTestHelper is Test {
     }
 
     // Full range
-    function addLiquidityFullRange(IUniswapV3Pool _pool, uint256 _amount0, uint256 _amount1)
+    function addLiquidityFullRange(address _pool, uint256 _amount0, uint256 _amount1)
         public
         returns (uint256 _liquidityAmount)
     {
@@ -98,13 +98,13 @@ contract PoolTestHelper is Test {
     }
 
     // Given range
-    function addLiquidity(IUniswapV3Pool _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1)
+    function addLiquidity(address _pool, int24 _lowerTick, int24 _upperTick, uint256 _amount0, uint256 _amount1)
         public
         returns (uint256)
     {
-        address _token0 = _pool.token0();
-        address _token1 = _pool.token1();
-        int24 _tickSpacing = _pool.tickSpacing();
+        address _token0 = IUniswapV3Pool(_pool).token0();
+        address _token1 = IUniswapV3Pool(_pool).token1();
+        int24 _tickSpacing = IUniswapV3Pool(_pool).tickSpacing();
 
         require(_lowerTick % _tickSpacing == 0, "lower tick not a multiple of tick spacing");
         require(_upperTick % _tickSpacing == 0, "upper tick not a multiple of tick spacing");
@@ -120,7 +120,7 @@ contract PoolTestHelper is Test {
             _currentSqrtPriceX96, _sqrtPriceAX96, _sqrtPriceBX96, _amount0, _amount1
         );
 
-        _pool.mint(address(this), _lowerTick, _upperTick, _liquidity, abi.encode(_token0, _token1));
+        IUniswapV3Pool(_pool).mint(address(this), _lowerTick, _upperTick, _liquidity, abi.encode(_token0, _token1));
 
         return _liquidity;
     }
@@ -146,11 +146,11 @@ contract PoolTestHelper is Test {
         );
     }
 
-    function swap(IUniswapV3Pool _pool, address _tokenIn, uint256 _amountIn) external {
-        address _token0 = _pool.token0();
-        address _token1 = _pool.token1();
+    function swap(address _pool, address _tokenIn, uint256 _amountIn) external {
+        address _token0 = IUniswapV3Pool(_pool).token0();
+        address _token1 = IUniswapV3Pool(_pool).token1();
 
-        _pool.swap({
+        IUniswapV3Pool(_pool).swap({
             recipient: msg.sender,
             zeroForOne: _tokenIn == _token0,
             amountSpecified: int256(_amountIn),
@@ -160,15 +160,15 @@ contract PoolTestHelper is Test {
     }
 
     // remove liquidity
-    function removeLiquidity(IUniswapV3Pool _pool, uint128 _amount, int24 _tickLower, int24 _tickUpper) public {
-        int24 _tickSpacing = _pool.tickSpacing();
+    function removeLiquidity(address _pool, uint128 _amount, int24 _tickLower, int24 _tickUpper) public {
+        int24 _tickSpacing = IUniswapV3Pool(_pool).tickSpacing();
 
         require(_tickLower % _tickSpacing == 0, "lower tick not a multiple of tick spacing");
         require(_tickUpper % _tickSpacing == 0, "upper tick not a multiple of tick spacing");
 
-        _pool.burn(_tickLower, _tickUpper, _amount);
+        IUniswapV3Pool(_pool).burn(_tickLower, _tickUpper, _amount);
 
-        _pool.collect(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, type(uint128).max, type(uint128).max);
+        IUniswapV3Pool(_pool).collect(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, type(uint128).max, type(uint128).max);
     }
 
     // increase cardinality
