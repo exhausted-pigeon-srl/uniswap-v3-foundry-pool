@@ -110,7 +110,7 @@ contract PoolTestHelper_Test is Test, Events {
             1e18
         );
 
-        return helper.addLiquidityFullRange(address(pool), 10e18, 10e18);
+        return helper.addLiquidityFullRange(pool, 10e18, 10e18);
     }
 
     function test_addLiquidity_concentrated() public {
@@ -154,7 +154,7 @@ contract PoolTestHelper_Test is Test, Events {
             1e18
         );
 
-        helper.addLiquidity(address(pool), _lowerTick, _upperTick, 1e18, 1e18);
+        helper.addLiquidity(pool, _lowerTick, _upperTick, 1e18, 1e18);
     }
 
     // swap
