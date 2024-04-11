@@ -34,13 +34,13 @@ contract PoolTestHelper_Test is Test, Events {
     function test_deployNewPool() public {
         uint256 _snap = vm.snapshot();
 
-        IUniswapV3Pool _pool = helper.createPool(
+        IUniswapV3Pool _pool = IUniswapV3Pool(helper.createPool(
             tokenA,
             tokenB,
             100,
             TickMath.MIN_SQRT_RATIO + 1,
             PoolTestHelper.Chains.Mainnet
-        );
+        ));
 
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         
@@ -57,13 +57,13 @@ contract PoolTestHelper_Test is Test, Events {
         
         vm.revertTo(_snap);
 
-        IUniswapV3Pool _pool2 = helper.createPool(
+        IUniswapV3Pool _pool2 = IUniswapV3Pool(helper.createPool(
             tokenA,
             tokenB,
             100,
             TickMath.MIN_SQRT_RATIO + 1,
             PoolTestHelper.Chains.Mainnet
-        );
+        ));
 
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         
@@ -74,13 +74,13 @@ contract PoolTestHelper_Test is Test, Events {
     }
 
     function test_addLiquidity_fullRange() public returns(uint256 _liquidityAmount){
-        pool = helper.createPool(
+        pool = IUniswapV3Pool(helper.createPool(
             tokenA,
             tokenB,
             100,
             1 ether,
             PoolTestHelper.Chains.Mainnet
-        );
+        ));
 
         // Not matching the data (here, amount)
         vm.expectEmit(true, true, true, false, address(tokenA));
@@ -110,7 +110,7 @@ contract PoolTestHelper_Test is Test, Events {
             1e18
         );
 
-        return helper.addLiquidityFullRange(pool, 10e18, 10e18);
+        return helper.addLiquidityFullRange(address(pool), 10e18, 10e18);
     }
 
     function test_addLiquidity_concentrated() public {
@@ -118,13 +118,13 @@ contract PoolTestHelper_Test is Test, Events {
         int24 _lowerTick = 1000;
         int24 _upperTick = _lowerTick + 10;
 
-        pool = helper.createPool(
+        pool = IUniswapV3Pool(helper.createPool(
             tokenA,
             tokenB,
             500,
             TickMath.getSqrtRatioAtTick(_lowerTick + 5),
             PoolTestHelper.Chains.Mainnet
-        );
+        ));
 
         // Not matching the data (here, amount)
         vm.expectEmit(true, true, false, false, address(tokenA));
@@ -154,7 +154,7 @@ contract PoolTestHelper_Test is Test, Events {
             1e18
         );
 
-        helper.addLiquidity(pool, _lowerTick, _upperTick, 1e18, 1e18);
+        helper.addLiquidity(address(pool), _lowerTick, _upperTick, 1e18, 1e18);
     }
 
     // swap
